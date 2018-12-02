@@ -8,7 +8,13 @@ NYU_DIR_NAME = 'NYU/'
 
 
 def open_nii_img(filename):
-    return nib.load(filename).get_data()
+    img = nib.load(filename).get_data()
+    if len(img.shape) == 3:
+        img = np.rot90(img, k=1, axes=(1, 2))
+    if len(img.shape) == 4:
+        img = img.transpose(3, 0, 2, 1)
+        img = np.rot90(img, k=2, axes=(1, 2))
+    return img
 
 
 def get_img_name(subject_id, img_type):
