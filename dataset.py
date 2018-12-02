@@ -8,7 +8,7 @@ import os
 class ImageDataset(torch.utils.data.Dataset):
     def __init__(self, base_dir, img_type, transform=None):
         super(ImageDataset, self).__init__()
-        self.base_dir = base_dir
+        self.base_dir = os.path.join(util.DATA_DIR, base_dir)
         phenotype_filename = os.path.join(util.DATA_DIR, base_dir, base_dir.replace('/', '') + '_phenotypic.csv')
         self.phenotype_info = pd.read_csv(phenotype_filename)
         self.img_type = img_type
