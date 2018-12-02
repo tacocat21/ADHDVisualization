@@ -9,10 +9,13 @@ class ImageDataset(torch.utils.data.Dataset):
     def __init__(self, base_dir, img_type, transform=None):
         super(ImageDataset, self).__init__()
         self.base_dir = base_dir
-        phenotype_filename = os.path.join(base_dir, base_dir.replace('/', '') + '_phenotypic.csv')
+        phenotype_filename = os.path.join(util.DATA_DIR, base_dir.replace('/', '') + '_phenotypic.csv')
         self.phenotype_info = pd.read_csv(phenotype_filename)
         self.img_type = img_type
         self.transform = transform
+
+    def change_img_type(self, img_type):
+        self.img_type = img_type
 
     def __getitem__(self, idx):
         info = self.phenotype_info.iloc[idx]

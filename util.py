@@ -4,7 +4,7 @@ import numpy as np
 from enum import Enum
 
 DATA_DIR = 'data'
-NYU_DIR_NAME = os.path.join(DATA_DIR, 'NYU')
+NYU_DIR_NAME = 'NYU/'
 
 
 def open_nii_img(filename):
