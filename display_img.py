@@ -15,9 +15,14 @@ def remove_keymap_conflicts(new_keys_set):
                 keys.remove(key)
 
 class Display:
-    def __init__(self, filename):
-        self.filename = filename
-        self.img = util.open_nii_img(filename)
+    def __init__(self, input_val):
+        # input_val can be filename or image
+        if type(input_val) is str:
+            self.filename = input_val
+            self.img = util.open_nii_img(input_val)
+        else:
+            self.filename = ''
+            self.img = input_val
 
         self.num_dim = len(self.img.shape)
         self.img_idx = 0

@@ -1,4 +1,4 @@
-# code from https://github.com/kenshohara/3D-ResNets-PyTorch/blob/master/models/resnet.py
+ # code from https://github.com/kenshohara/3D-ResNets-PyTorch/blob/master/models/resnet.py
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
