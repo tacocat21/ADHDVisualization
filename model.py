@@ -32,7 +32,7 @@ class StructuralModel3D(nn.modules.Module):
         self.conv6 = _conv_layer(32, 16, kernel_size=(3, 4, 3))
         self.conv7 = _conv_layer(16, 8, kernel_size=(3, 4, 3))
         self.conv8 = _conv_layer(8, 4, kernel_size=(1, 4, 3))
-        self.fc = torch.nn.Linear(64, 4)
+        self.fc = torch.nn.Linear(80, 4)
 
     def forward(self, img):
         ipdb.set_trace()
