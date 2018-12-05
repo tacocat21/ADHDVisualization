@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import ipdb
 import torchvision.models
 OUTPUT_CLASSES = 4
 
@@ -33,6 +34,7 @@ class StructuralModel3D(nn.modules.Module):
         self.fc = torch.nn.Linear(64, 4)
 
     def forward(self, img):
+        ipdb.set_trace()
         out = self.max_pool_1(img)
         out = self.conv1(out)
         out = self.max_pool_2(out)
