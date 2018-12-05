@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+import model
 #from torchvision import datasets, transforms
 from torch.autograd import Variable
 import torch.distributed as dist
@@ -30,11 +31,12 @@ num_of_epochs = 30
 
 
 def run(optimizer_type, img_type):
-    model = resnet_3d.resnet18(sample_size=IMAGE_SIZE, sample_duration=util.IMG_LENGTH)
-    model.fc = torch.nn.Linear(model.fc.in_features, NUM_CLASSES)
-    model = model.cuda()
+    # _model = resnet_3d.resnet18(sample_size=IMAGE_SIZE, sample_duration=util.IMG_LENGTH)
+    # _model.fc = torch.nn.Linear(_model.fc.in_features, NUM_CLASSES)
+    _model = model.StructuralModel3D()
+    _model = _model.cuda()
     if optimizer_type == 'adam':
-        optimizer = optim.Adam(model.parameters(), lr=lr)
+        optimizer = optim.Adam(_model.parameters(), lr=lr)
     # ipdb.set_trace()
     save_dir = 'model/{}/{}/{}'.format(str(img_type), optimizer_type, lr)
     util.mkdir(save_dir)
@@ -46,7 +48,7 @@ def run(optimizer_type, img_type):
         ###### TRAIN
         train_accu = []
         train_loss = []
-        model.train()
+        _model.train()
         start_time = time.time()
         print("Epoch: {}".format(epoch))
         random.shuffle(base_dirs)
@@ -68,7 +70,7 @@ def run(optimizer_type, img_type):
                 img = Variable(img.float()).cuda().contiguous()
                 img = img.view(img.shape[0], 1, img.shape[1], img.shape[2], img.shape[3])
                 # print(img.shape)
-                out = model(img)
+                out = _model(img)
                 # print(out)
                 optimizer.zero_grad()
                 loss = criterion(out, label)
@@ -83,7 +85,7 @@ def run(optimizer_type, img_type):
                 if count % 100 == 0:
                     print("Training accuracy = {}".format(accuracy))
                 count+= 1
-        torch.save(model, './{}/{}'.format(save_dir, '{}.ckpt'.format(epoch)))
+        torch.save(_model, './{}/{}'.format(save_dir, '{}.ckpt'.format(epoch)))
     train_accu = np.asarray(train_accu)
     train_loss = np.asarray(train_loss)
     np.save(file=os.path.join(save_dir, 'loss.npy'), arr=train_loss)

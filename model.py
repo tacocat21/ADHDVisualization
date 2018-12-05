@@ -16,12 +16,12 @@ def _conv_layer(input_channels, output_channels, kernel_size):
 
 # training a 3D conv net on the structural dataset
 class StructuralModel3D(nn.modules.Module):
-    def __init__(self, input_length):
+    def __init__(self):
         super(StructuralModel3D, self).__init__()
         max_pool_shape = (2,2,2)
         self.max_pool_1 = torch.nn.MaxPool3d(max_pool_shape)
-        img_shape = (input_length, *IMAGE_SHAPE)
-        max_pool_output = max_pool_output_shape(img_shape, max_pool_shape)
+        # img_shape = (input_length, *IMAGE_SHAPE)
+        # max_pool_output = max_pool_output_shape(img_shape, max_pool_shape)
         self.conv1 = _conv_layer(1, 32, kernel_size=5)
         self.max_pool_2 = torch.nn.MaxPool3d(max_pool_shape)
         self.conv2 = _conv_layer(32, 32, kernel_size=(3, 5, 5))
