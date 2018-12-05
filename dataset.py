@@ -31,7 +31,7 @@ class ImageDataset(torch.utils.data.Dataset):
             return np.zeros((util.IMG_LENGTH, util.MODEL_IMG_INPUT_SIZE, util.MODEL_IMG_INPUT_SIZE)), 1, 1
         if len(img.shape) == 3:
             img = img[:, 20:, 25:220]
-            img = util.resize_3d_img(img, (util.MODEL_IMG_INPUT_SIZE, util.MODEL_IMG_INPUT_SIZE))
+            img = util.resize_3d_img(img, (233, 189))
             if self.transform:
                 res = []
                 for i in range(img.shape[0]):
