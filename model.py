@@ -11,8 +11,8 @@ def max_pool_output_shape(input_shape, max_poolsize):
         res.append(i-(p-1))
     return tuple(res)
 
-def _conv_layer(input_channels, output_channels, kernel_size, padding=0):
-    return torch.nn.Sequential(nn.Conv3d(input_channels, output_channels, kernel_size=kernel_size, padding=padding),
+def _conv_layer(input_channels, output_channels, kernel_size, stride=1, padding=0):
+    return torch.nn.Sequential(nn.Conv3d(input_channels, output_channels, stride=stride, kernel_size=kernel_size, padding=padding),
                                nn.ReLU())
 
 # training a 3D conv net on the structural dataset
@@ -25,13 +25,13 @@ class StructuralModel3D(nn.modules.Module):
         # max_pool_output = max_pool_output_shape(img_shape, max_pool_shape)
         self.conv1 = _conv_layer(1, 32, kernel_size=5, padding=(1, 0,0))
         self.max_pool_2 = torch.nn.MaxPool3d(max_pool_shape)
-        self.conv2 = _conv_layer(32, 32, kernel_size=(3, 6, 5), padding=(1, 0,0))
+        self.conv2 = _conv_layer(32, 32, kernel_size=(3, 6, 5), padding=(1, 0,0), stride=(1, 2, 2))
         self.conv3 = _conv_layer(32, 64, kernel_size=(3, 6, 5), padding=(1, 0,0))
         self.conv4 = _conv_layer(64, 64, kernel_size=(3, 5, 4), padding=(1, 0,0))
         self.conv5 = _conv_layer(64, 32, kernel_size=(3, 5, 4))
         self.conv6 = _conv_layer(32, 16, kernel_size=(3, 4, 3))
         self.conv7 = _conv_layer(16, 8, kernel_size=(3, 4, 3))
-        self.conv8 = _conv_layer(16, 8, kernel_size=(1, 4, 3))
+        self.conv8 = _conv_layer(8, 4, kernel_size=(1, 4, 3))
         self.fc = torch.nn.Linear(64, 4)
 
     def forward(self, img):
