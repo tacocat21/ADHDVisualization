@@ -27,6 +27,7 @@ class StructuralModel3D(nn.modules.Module):
         self.conv2 = _conv_layer(32, 32, kernel_size=(3, 5, 5), padding=1)
         self.conv3 = _conv_layer(32, 64, kernel_size=3)
         self.conv4 = _conv_layer(64, 64, kernel_size=3)
+        self.conv5 = _conv_layer(64, 32, kernel_size=3)
         self.fc = torch.nn.Linear(64, 4)
 
     def forward(self, img):
@@ -36,6 +37,7 @@ class StructuralModel3D(nn.modules.Module):
         out = self.conv2(out)
         out = self.conv3(out)
         out = self.conv4(out)
+        out = self.conv5(out)
         if len(img.shape) == 5:
             out = out.view(img.shape[0], -1)
         else:
