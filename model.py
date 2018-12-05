@@ -33,8 +33,8 @@ class StructuralModel3D(nn.modules.Module):
         out = self.max_pool_1(img)
         out = self.conv1(out)
         out = self.max_pool_2(out)
-        out = self.conv3(out)
         out = self.conv2(out)
+        out = self.conv3(out)
         out = self.conv4(out)
         if len(img.shape) == 5:
             out = out.view(img.shape[0], -1)
