@@ -35,7 +35,6 @@ class StructuralModel3D(nn.modules.Module):
         self.fc = torch.nn.Linear(80, 4)
 
     def forward(self, img):
-        ipdb.set_trace()
         out = self.max_pool_1(img)
         out = self.conv1(out)
         out = self.max_pool_2(out)
