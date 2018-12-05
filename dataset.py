@@ -1,3 +1,4 @@
+import random
 from torchvision import transforms
 import torch
 import numpy as np
@@ -11,7 +12,7 @@ import ipdb
 class ImageDataset(torch.utils.data.Dataset):
     def __init__(self, base_dir, img_type, transform=None):
         super(ImageDataset, self).__init__()
-        self.base_dir = os.path.join(util.DATA_DIR, base_dir)
+        self.base_dir = os.path.join(util.DATA_DIR,  base_dir)
         phenotype_filename = os.path.join(util.DATA_DIR, base_dir, base_dir.replace('/', '') + '_phenotypic.csv')
         self.phenotype_info = pd.read_csv(phenotype_filename)
         self.img_type = img_type
@@ -27,7 +28,7 @@ class ImageDataset(torch.utils.data.Dataset):
             img_name = util.get_img_name(subject_id=info[0], img_type=self.img_type)
             img = util.open_nii_img(os.path.join(dir_name, img_name))
         except:
-            return self.__getitem__((idx +1) % self.__len__())
+            return np.zeros((util.IMG_LENGTH, util.MODEL_IMG_INPUT_SIZE, util.MODEL_IMG_INPUT_SIZE)), 1, 1
         if len(img.shape) == 3:
             img = img[:, 20:, 25:220]
             img = util.resize_3d_img(img, (util.MODEL_IMG_INPUT_SIZE, util.MODEL_IMG_INPUT_SIZE))
@@ -38,7 +39,8 @@ class ImageDataset(torch.utils.data.Dataset):
                 img = torch.stack(res, axis=0)
         elif len(img.shape) == 4:
             raise NotImplementedError("Need to imploment 4d access")
-        return img, info['DX']
+        idx = random.randint(0, len(img)-util.IMG_LENGTH-1)
+        return img[idx:idx+util.IMG_LENGTH], info['DX'], 0
 
     def __len__(self):
         return len(self.phenotype_info)
@@ -46,6 +48,6 @@ class ImageDataset(torch.utils.data.Dataset):
 
 train_transform = transforms.Compose([transforms.ToTensor()])
 # , transforms.Normalize((0), (1))
-def get_data_loader(base_dir, img_type, transform=None, shuffle=True):
+def get_data_loader(base_dir, img_type, batch_size=32, transform=None, shuffle=True):
     dataset = ImageDataset(base_dir, img_type, transform=transform)
-    return torch.utils.data.dataloader.DataLoader(dataset, num_workers=32, shuffle=shuffle)
+    return torch.utils.data.dataloader.DataLoader(dataset, batch_size=batch_size, num_workers=0, shuffle=shuffle)

@@ -2,9 +2,21 @@ import os
 import nibabel as nib
 import numpy as np
 from enum import Enum
+import scipy.misc
+import ipdb
 
-DATA_DIR = 'data'
+IMG_LENGTH = 32
+BATCH_SIZE = 6
+DATA_DIR = 'data/images'
 NYU_DIR_NAME = 'NYU/'
+MODEL_IMG_INPUT_SIZE=224
+
+
+def mkdir(dir):
+    try:
+        os.makedirs(dir)
+    except OSError:
+        pass
 
 
 def open_nii_img(filename):
@@ -16,6 +28,20 @@ def open_nii_img(filename):
         img = np.rot90(img, k=2, axes=(1, 2))
     return img
 
+def resize_3d_img(img, shape):
+    res = []
+    img = img.astype(np.float32)
+    # ipdb.set_trace()
+    for i in range(img.shape[0]):
+        new_img = scipy.misc.imresize(img[i], shape)
+        # normalize to 0 mean, 1 std
+        new_img = (new_img - np.mean(new_img))
+        if np.std(img[i]) > 0.00001:
+            new_img = new_img/np.std(img[i])
+        else:
+            continue
+        res.append(new_img)
+    return np.asarray(res)
 
 def get_img_name(subject_id, img_type):
     img_name = None
