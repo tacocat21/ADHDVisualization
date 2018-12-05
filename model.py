@@ -24,12 +24,12 @@ class StructuralModel3D(nn.modules.Module):
         # max_pool_output = max_pool_output_shape(img_shape, max_pool_shape)
         self.conv1 = _conv_layer(1, 32, kernel_size=5, padding=(1, 0,0))
         self.max_pool_2 = torch.nn.MaxPool3d(max_pool_shape)
-        self.conv2 = _conv_layer(32, 32, kernel_size=(3, 5, 5), padding=(1, 0,0))
-        self.conv3 = _conv_layer(32, 64, kernel_size=(3, 5, 4), padding=(1, 0,0))
-        self.conv4 = _conv_layer(64, 64, kernel_size=(3, 4, 4))
-        self.conv5 = _conv_layer(64, 32, kernel_size=(3, 4, 3))
+        self.conv2 = _conv_layer(32, 32, kernel_size=(3, 6, 5), padding=(1, 0,0))
+        self.conv3 = _conv_layer(32, 64, kernel_size=(3, 6, 5), padding=(1, 0,0))
+        self.conv4 = _conv_layer(64, 64, kernel_size=(3, 5, 4), padding=(1, 0,0))
+        self.conv5 = _conv_layer(64, 32, kernel_size=(3, 5, 4))
         self.conv6 = _conv_layer(32, 16, kernel_size=(3, 4, 3))
-        self.conv7 = _conv_layer(16, 8, kernel_size=(3, 4, 3))
+        self.conv7 = _conv_layer(16, 8, kernel_size=(2, 4, 3))
         self.fc = torch.nn.Linear(64, 4)
 
     def forward(self, img):
