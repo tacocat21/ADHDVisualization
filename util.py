@@ -6,7 +6,7 @@ import scipy.misc
 import ipdb
 
 IMG_LENGTH = 32
-BATCH_SIZE = 6
+BATCH_SIZE = 25
 DATA_DIR = 'data/images'
 NYU_DIR_NAME = 'NYU/'
 MODEL_IMG_INPUT_SIZE=(233, 189)

@@ -25,7 +25,6 @@ from multiprocessing import Pool
 
 IMAGE_SIZE = 224
 NUM_CLASSES = 4
-batch_size = 25
 lr = 0.005
 num_of_epochs = 30
 
@@ -79,11 +78,12 @@ def run(optimizer_type, img_type):
                 optimizer.step()
 
                 prediction = out.data.max(1)[1]
-                accuracy = (float(prediction.eq(label.data).sum()) / float(batch_size)) * 100.0
+                correct = float(prediction.eq(label.data).sum())
+                accuracy = (correct / float(util.BATCH_SIZE)) * 100.0
                 train_loss.append(loss.item())
                 train_accu.append(accuracy)
                 # if count % 100 == 0:
-                print("Epoch {} iter {}: Training accuracy = {} Loss = [{}]".format(epoch, idx, accuracy, loss.item()))
+                print("Epoch {} iter {}: Training accuracy = {}/{}={} Loss = [{}]".format(correct, util.BATCH_SIZE, epoch, idx, accuracy, loss.item()))
                 count+= 1
         torch.save(_model, './{}/{}'.format(save_dir, '{}.ckpt'.format(epoch)))
     train_accu = np.asarray(train_accu)
