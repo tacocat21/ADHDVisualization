@@ -28,7 +28,7 @@ class ImageDataset(torch.utils.data.Dataset):
             img_name = util.get_img_name(subject_id=info[0], img_type=self.img_type)
             img = util.open_nii_img(os.path.join(dir_name, img_name))
         except:
-            return np.zeros((util.IMG_LENGTH, util.MODEL_IMG_INPUT_SIZE, util.MODEL_IMG_INPUT_SIZE)), 1, 1
+            return np.zeros((util.IMG_LENGTH, *util.MODEL_IMG_INPUT_SIZE)), 1, 1
         if len(img.shape) == 3:
             img = img[:, 20:, 25:220]
             img = util.resize_3d_img(img, (233, 189))

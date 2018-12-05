@@ -9,7 +9,7 @@ IMG_LENGTH = 32
 BATCH_SIZE = 6
 DATA_DIR = 'data/images'
 NYU_DIR_NAME = 'NYU/'
-MODEL_IMG_INPUT_SIZE=224
+MODEL_IMG_INPUT_SIZE=(233, 189)
 
 
 def mkdir(dir):
