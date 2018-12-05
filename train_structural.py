@@ -83,7 +83,7 @@ def run(optimizer_type, img_type):
                 train_loss.append(loss.item())
                 train_accu.append(accuracy)
                 # if count % 100 == 0:
-                print("Epoch {} iter {}: Training accuracy = {}/{}={} Loss = [{}]".format(correct, util.BATCH_SIZE, epoch, idx, accuracy, loss.item()))
+                print("Epoch {} iter {}: Training accuracy = {}/{}={} Loss = [{}]".format(epoch, idx, correct, util.BATCH_SIZE, accuracy, loss.item()))
                 count+= 1
         torch.save(_model, './{}/{}'.format(save_dir, '{}.ckpt'.format(epoch)))
     train_accu = np.asarray(train_accu)
