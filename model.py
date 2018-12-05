@@ -12,7 +12,7 @@ def max_pool_output_shape(input_shape, max_poolsize):
     return tuple(res)
 
 def _conv_layer(input_channels, output_channels, kernel_size, stride=1, padding=0):
-    return torch.nn.Sequential(nn.Conv3d(input_channels, output_channels, stride=stride, kernel_size=kernel_size, padding=padding),
+    return torch.nn.Sequential(nn.Conv3d(input_channels, output_channels, stride=stride, kernel_size=kernel_size, padding=padding, bias=False),
                                nn.ReLU(),
                                nn.BatchNorm3d(output_channels))
 
