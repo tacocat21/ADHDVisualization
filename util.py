@@ -43,13 +43,16 @@ def resize_3d_img(img, shape):
         res.append(new_img)
     return np.asarray(res)
 
+def format_subject_id_name(subject_id):
+    subject_id = str(subject_id)
+    if '.' in subject_id:
+        subject_id = subject_id[:subject_id.find('.')]
+    if len(subject_id) < 7:
+        subject_id = '0' * (7 - len(subject_id)) + subject_id
+    return subject_id
+
 def get_img_name(subject_id, img_type):
     img_name = None
-    subject_id = str(subject_id)
-    if '.' in  subject_id:
-        subject_id = subject_id[:subject_id.find('.')]
-        if len(subject_id) < 7:
-            subject_id = '0'*(7-len(subject_id)) + subject_id
     if img_type == ImgType.STRUCTURAL_T1:
         img_name = STRUCTURAL_T1_FILE_FORMAT.format(subject=subject_id)
     elif img_type == ImgType.STRUCTURAL_GM:

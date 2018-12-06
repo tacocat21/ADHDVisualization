@@ -23,9 +23,10 @@ class ImageDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         info = self.phenotype_info.iloc[idx]
-        dir_name = os.path.join(self.base_dir, str(info[0]))
+        subject_id = util.format_subject_id_name(info[0])
+        dir_name = os.path.join(self.base_dir, str(subject_id))
+        img_name = util.get_img_name(subject_id=subject_id, img_type=self.img_type)
         try:
-            img_name = util.get_img_name(subject_id=info[0], img_type=self.img_type)
             img = util.open_nii_img(os.path.join(dir_name, img_name))
         except:
             return np.zeros((util.IMG_LENGTH, *util.MODEL_IMG_INPUT_SIZE)), 1, 1
