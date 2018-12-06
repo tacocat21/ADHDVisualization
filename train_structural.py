@@ -39,7 +39,8 @@ def run(optimizer_type, img_type):
     # ipdb.set_trace()
     save_dir = 'model/{}/{}/{}'.format(str(img_type), optimizer_type, lr)
     util.mkdir(save_dir)
-    base_dirs = ['Peking_1', 'NYU', 'Peking_2', 'OHSU', 'WashU', 'KKI', 'NeuroIMAGE']
+    # base_dirs = ['Peking_1', 'NYU', 'Peking_2', 'OHSU', 'WashU', 'KKI', 'NeuroIMAGE']
+    base_dirs = ['NYU', 'OHSU', 'WashU', 'NeuroIMAGE']
     criterion = nn.CrossEntropyLoss()
     count = 0
     begin_time = time.time()
