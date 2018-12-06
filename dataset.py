@@ -30,6 +30,7 @@ class ImageDataset(torch.utils.data.Dataset):
         try:
             img = util.open_nii_img(path)
         except:
+            print('Error idx: {} path: {}'.format(idx, path))
             return np.zeros((util.IMG_LENGTH, *util.MODEL_IMG_INPUT_SIZE)), 1, 1
         if len(img.shape) == 3:
             img = img[:, 20:, 25:220]
