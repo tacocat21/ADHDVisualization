@@ -66,7 +66,8 @@ def get_img_name(subject_id, img_type, dir_name):
         img_name = FUNCTIONAL_BLURRED_FILE_FORMAT.format(subject=subject_id, session_id='*')
     elif img_type == ImgType.FUNCTIONAL_BANDPASS:
         img_name = FUNCTIONAL_BANDPASS_FILE_FORMAT.format(subject=subject_id, session_id='*')
-    return glob.glob(os.path.join(dir_name, img_name))[0]
+    path = os.path.join(dir_name, img_name)
+    return glob.glob(path)[0]
 
 
 class ImgType(Enum):
