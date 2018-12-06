@@ -43,7 +43,7 @@ class ImageDataset(torch.utils.data.Dataset):
         elif len(img.shape) == 4:
             raise NotImplementedError("Need to imploment 4d access")
         idx = random.randint(0, len(img)-util.IMG_LENGTH-1)
-        return img[idx:idx+util.IMG_LENGTH], info['DX'], 0
+        return img[idx:idx+util.IMG_LENGTH], int(info['DX']), 0
 
     def __len__(self):
         return len(self.phenotype_info)
