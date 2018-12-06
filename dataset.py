@@ -25,7 +25,7 @@ class ImageDataset(torch.utils.data.Dataset):
         info = self.phenotype_info.iloc[idx]
         subject_id = util.format_subject_id_name(info[0])
         dir_name = os.path.join(self.base_dir, str(subject_id))
-        img_name = util.get_img_name(subject_id=subject_id, img_type=self.img_type)
+        img_name = util.get_img_name(subject_id=subject_id, img_type=self.img_type, dir_name=dir_name)
         path = os.path.join(dir_name, img_name)
         try:
             img = util.open_nii_img(path)

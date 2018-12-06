@@ -52,7 +52,7 @@ def format_subject_id_name(subject_id):
         subject_id = '0' * (7 - len(subject_id)) + subject_id
     return subject_id
 
-def get_img_names(subject_id, img_type):
+def get_img_name(subject_id, img_type, dir_name):
     img_name = None
     if img_type == ImgType.STRUCTURAL_T1:
         img_name = STRUCTURAL_T1_FILE_FORMAT.format(subject=subject_id, session_id='*')
@@ -66,7 +66,7 @@ def get_img_names(subject_id, img_type):
         img_name = FUNCTIONAL_BLURRED_FILE_FORMAT.format(subject=subject_id, session_id='*')
     elif img_type == ImgType.FUNCTIONAL_BANDPASS:
         img_name = FUNCTIONAL_BANDPASS_FILE_FORMAT.format(subject=subject_id, session_id='*')
-    return glob.glob(img_name)[0]
+    return glob.glob(os.path.join(dir_name, img_name))[0]
 
 
 class ImgType(Enum):
