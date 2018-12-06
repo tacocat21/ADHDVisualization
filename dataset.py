@@ -28,6 +28,8 @@ class ImageDataset(torch.utils.data.Dataset):
         img_name = util.get_img_name(subject_id=subject_id, img_type=self.img_type, dir_name=dir_name)
         # path = os.path.join(dir_name, img_name)
         path = img_name
+        if path == '':
+            return np.zeros((util.IMG_LENGTH, *util.MODEL_IMG_INPUT_SIZE)), 1, 1
         try:
             img = util.open_nii_img(path)
         except:

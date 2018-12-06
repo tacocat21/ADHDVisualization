@@ -67,7 +67,11 @@ def get_img_name(subject_id, img_type, dir_name):
     elif img_type == ImgType.FUNCTIONAL_BANDPASS:
         img_name = FUNCTIONAL_BANDPASS_FILE_FORMAT.format(subject=subject_id, session_id='*')
     path = os.path.join(dir_name, img_name)
-    return glob.glob(path)[0]
+    try:
+        return glob.glob(path)[0]
+    except IndexError:
+        print("Error obtaining in {}".format(path))
+        return ''
 
 
 class ImgType(Enum):
