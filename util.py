@@ -9,7 +9,7 @@ import glob
 import model
 import torch
 IMG_LENGTH = 187
-BATCH_SIZE = 25
+BATCH_SIZE = 12
 DATA_DIR = 'data/images'
 NYU_DIR_NAME = 'NYU/'
 MODEL_IMG_INPUT_SIZE=(169, 195)

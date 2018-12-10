@@ -30,22 +30,28 @@ NUM_CLASSES = 4
 num_of_epochs = 30
 
 
-def run(optimizer_type, img_type, lr = 0.005):
+def run(optimizer_type, img_type, lr = 0.005, large=False):
     # _model = resnet_3d.resnet18(sample_size=IMAGE_SIZE, sample_duration=util.IMG_LENGTH)
     # _model.fc = torch.nn.Linear(_model.fc.in_features, NUM_CLASSES)
     # _model = model.StructuralModel3D()
-    _model = model.StructuralModel3DFullImage()
+    if large:
+        _model = model.StructuralModel3DFullImageLarge()
+        _model_dir = 'model_large'
+    else:
+        _model = model.StructuralModel3DFullImage()
+        _model_dir = 'model'
     _model = _model.cuda()
     if optimizer_type == 'adam':
         optimizer = optim.Adam(_model.parameters(), lr=lr)
     # ipdb.set_trace()
-    save_dir = 'model/{}/{}/{}'.format(str(img_type), optimizer_type, lr)
+    save_dir = '{}/{}/{}/{}'.format(_model_dir, str(img_type), optimizer_type, lr)
     util.mkdir(save_dir)
-    base_dirs = ['Peking_1', 'Peking_2', 'OHSU', 'WashU', 'KKI', 'NeuroIMAGE']
+    base_dirs = ['KKI', 'NeuroIMAGE', 'OHSU', 'Peking_1', 'Peking_2', 'Peking_3', 'Pittsburgh','WashU']
     # base_dirs = ['NYU']
     criterion = nn.CrossEntropyLoss()
     count = 0
     begin_time = time.time()
+    train_acc_dict = {}
     for epoch in range(0, num_of_epochs):
         ###### TRAIN
         train_accu = []
@@ -56,13 +62,15 @@ def run(optimizer_type, img_type, lr = 0.005):
         random.shuffle(base_dirs)
         for base_dir in base_dirs:
             print('Using {}'.format(base_dir))
-            d = dataset.get_data_loader(base_dir, img_type, batch_size=util.BATCH_SIZE)
+            d = dataset.get_data_loader(base_dir, img_type, batch_size=util.BATCH_SIZE, train=True)
             if optimizer_type == 'adam':
                 for group in optimizer.param_groups:
                     for p in group['params']:
                         state = optimizer.state[p]
                         if ('step' in state and state['step'] >= 1024):
                             state['step'] = 1000
+            num_correct= 0
+            num_total = 0
             for idx, (img, label, err) in enumerate(d):
                 if(sum(err) != 0):
                     print("Error occured")
@@ -82,18 +90,25 @@ def run(optimizer_type, img_type, lr = 0.005):
 
                 prediction = out.data.max(1)[1]
                 correct = float(prediction.eq(label.data).sum())
+                num_correct += correct
+                num_total += len(label)
                 accuracy = (correct / float(len(label))) * 100.0
                 train_loss.append(loss.item())
                 train_accu.append(accuracy)
                 # if count % 100 == 0:
                 print("Epoch {} iter {}: Training accuracy = {}/{}={} Loss = [{}]".format(epoch, idx, correct, len(label), accuracy, loss.item()))
                 count+= 1
+            base_train_acc = float(num_correct)/num_total * 100.0
+            print("Epoch {} {}: Training accuracy = {}/{}={}".format(epoch, base_dir, num_correct, num_total, base_train_acc))
+            train_acc_dict[base_dir] = base_train_acc
+
         torch.save(_model, './{}/{}'.format(save_dir, '{}.ckpt'.format(epoch)))
     train_accu = np.asarray(train_accu)
     train_loss = np.asarray(train_loss)
     np.save(file=os.path.join(save_dir, 'loss.npy'), arr=train_loss)
     np.save(file=os.path.join(save_dir, 'train_acc.npy'), arr=train_accu)
     print("Ran for {}s".format(time.time()-begin_time))
+    util.save_data(file=os.path.join(save_dir, 'train_dict.pckl'), d=train_acc_dict)
 
 def test(model_filename, img_type, dir_name):
     model = torch.load(os.path.join(dir_name, model_filename))
@@ -137,16 +152,16 @@ if __name__ == '__main__':
     # run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_TRANSFORM)
     # run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_FILTER)
     # run(optimizer_type='adam', img_type=util.ImgType.FUNCTIONAL_GM)
-    # lr_list = [0.05, 0.001, 0.0001]
-    # for l in lr_list:
-    #     run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_T1, lr=l)
-    #     run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_TRANSFORM, lr=l)
-    #     run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_FILTER, lr=l)
+    lr_list = [0.0001,  0.00005, 0.01, 0.001]
+    for l in lr_list:
+        run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_T1, lr=l, large=True)
+        run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_TRANSFORM, lr=l, large=True)
+        run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_FILTER, lr=l, large=True)
         # run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_GM, lr=l)
-    model_ckpt = [15, 20, 25, 30]
-    for c in model_ckpt:
-        model_name = "{}.ckpt".format(c)
-        img_type= util.ImgType.STRUCTURAL_FILTER
-        dir_name = 'model/ImgType.STRUCTURAL_FILTER/adam/0.0001/'
-        test(model_name, img_type, dir_name)
+    # model_ckpt = [15, 20, 25, 30]
+    # for c in model_ckpt:
+    #     model_name = "{}.ckpt".format(c)
+    #     img_type= util.ImgType.STRUCTURAL_FILTER
+    #     dir_name = 'model/ImgType.STRUCTURAL_FILTER/adam/0.0001/'
+    #     test(model_name, img_type, dir_name)
     # run_test()

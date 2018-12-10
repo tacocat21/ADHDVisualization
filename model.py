@@ -16,6 +16,53 @@ def _conv_layer(input_channels, output_channels, kernel_size, stride=1, padding=
                                nn.ReLU(),
                                nn.BatchNorm3d(output_channels))
 
+class StructuralModel3DFullImageLarge(nn.modules.Module):
+    def __init__(self):
+        super(StructuralModel3DFullImageLarge, self).__init__()
+        max_pool_shape = (2,2,2)
+        self.max_pool_1 = torch.nn.MaxPool3d(max_pool_shape)
+        # img_shape = (input_length, *IMAGE_SHAPE)
+        # max_pool_output = max_pool_output_shape(img_shape, max_pool_shape)
+        self.conv1 = _conv_layer(1, 64, kernel_size=5)
+        self.max_pool_2 = torch.nn.MaxPool3d(max_pool_shape)
+        self.conv2 = _conv_layer(64, 64, kernel_size=(4, 5, 4), stride=(2, 2, 2))
+        self.conv3 = _conv_layer(64, 48, kernel_size=(4, 4, 4))
+        self.conv4 = _conv_layer(48, 32, kernel_size=(4, 4, 4))
+        self.conv5 = _conv_layer(32, 32, kernel_size=(4, 4, 4))
+        self.conv6 = _conv_layer(32, 32, kernel_size=(4, 3, 4))
+        self.conv7 = _conv_layer(32, 32, kernel_size=(4, 3, 3))
+        self.conv8 = _conv_layer(32, 16, kernel_size=(3, 3, 3))
+        self.conv9 = _conv_layer(16, 16, kernel_size=(3, 3, 3))
+
+        # self.conv8[0].register_hook(self.save_gradient)
+        self.fc = torch.nn.Linear(128, 4)
+        self.gradient = None
+
+    def save_gradient(self, grad):
+        print(grad)
+        self.gradient= grad
+
+    def forward(self, img, get_conv9=False):
+        out = self.max_pool_1(img)
+        out = self.conv1(out)
+        out = self.max_pool_2(out)
+        out = self.conv2(out)
+        out = self.conv3(out)
+        out = self.conv4(out)
+        out = self.conv5(out)
+        out = self.conv6(out)
+        out = self.conv7(out)
+        out = self.conv8(out)
+        out = self.conv9(out)
+
+        if len(img.shape) == 5:
+            out = out.view(img.shape[0], -1)
+        else:
+            out = out.view(1, -1)
+        out = self.fc(out)
+        return out
+
+
 class StructuralModel3DFullImage(nn.modules.Module):
     def __init__(self):
         super(StructuralModel3DFullImage, self).__init__()

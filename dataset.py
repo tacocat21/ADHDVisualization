@@ -10,18 +10,24 @@ import os
 import ipdb
 
 class ImageDataset(torch.utils.data.Dataset):
-    def __init__(self, base_dir, img_type, transform=None):
+    def __init__(self, base_dir, img_type, transform=None, train=True):
         super(ImageDataset, self).__init__()
         self.base_dir = os.path.join(util.DATA_DIR,  base_dir)
         phenotype_filename = os.path.join(util.DATA_DIR, base_dir, base_dir.replace('/', '') + '_phenotypic.csv')
         self.phenotype_info = pd.read_csv(phenotype_filename)
         self.img_type = img_type
         self.transform = transform
+        self.train = train
+        self.total_len = len(self.phenotype_info)
+        self.train_len = int(self.total_len*0.9)
+        self.test_len = self.total_len - self.train_len
 
     def change_img_type(self, img_type):
         self.img_type = img_type
 
     def __getitem__(self, idx):
+        if not self.train:
+            idx = idx + self.train_len
         info = self.phenotype_info.iloc[idx]
         subject_id = util.format_subject_id_name(info[0])
         dir_name = os.path.join(self.base_dir, str(subject_id))
@@ -51,11 +57,14 @@ class ImageDataset(torch.utils.data.Dataset):
         return img[3:util.IMG_LENGTH], int(info['DX']), 0
 
     def __len__(self):
-        return len(self.phenotype_info)
+        if self.train:
+            return self.train_len
+        else:
+            return self.test_len
 
 
 train_transform = transforms.Compose([transforms.ToTensor()])
 # , transforms.Normalize((0), (1))
-def get_data_loader(base_dir, img_type, batch_size=32, transform=None, shuffle=True):
-    dataset = ImageDataset(base_dir, img_type, transform=transform)
+def get_data_loader(base_dir, img_type, batch_size=32, transform=None, shuffle=True, train=True):
+    dataset = ImageDataset(base_dir, img_type, transform=transform, train=train)
     return torch.utils.data.dataloader.DataLoader(dataset, batch_size=batch_size, num_workers=0, shuffle=shuffle)
