@@ -39,7 +39,9 @@ class Display:
             volume = self.img[0]
         ax.volume = volume
         ax.index = 0
-        ax.imshow(volume[ax.index])
+        self.im = ax.imshow(volume[ax.index])
+        cbar = fig.colorbar(self.im, extend='both', spacing='uniform',
+                            shrink=0.9, ax=ax)
         # if self.mask is not None:
         #     ax.imshow(self.mask[ax.index], alpha=0.5, cmap='jet')
         fig.canvas.mpl_connect('key_press_event', self.process_key)

@@ -6,13 +6,20 @@ from enum import Enum
 import scipy.misc
 import ipdb
 import glob
-
+import model
+import torch
 IMG_LENGTH = 187
 BATCH_SIZE = 25
 DATA_DIR = 'data/images'
 NYU_DIR_NAME = 'NYU/'
 MODEL_IMG_INPUT_SIZE=(169, 195)
-
+# 'model/ImgType.STRUCTURAL_FILTER/adam/0.0001/29.ckpt'
+def load_model(filename):
+    _model = model.StructuralModel3DFullImage()
+    old_model = torch.load(filename)
+    _model.load_state_dict(old_model.state_dict())
+    _model = _model.cuda()
+    return _model
 
 def mkdir(dir):
     try:
@@ -30,16 +37,17 @@ def open_nii_img(filename):
         img = np.rot90(img, k=2, axes=(1, 2))
     return img
 
-def resize_3d_img(img, shape):
+def resize_3d_img(img, shape, normalize=True):
     res = []
     img = img.astype(np.float32)
     # ipdb.set_trace()
     for i in range(img.shape[0]):
         new_img = scipy.misc.imresize(img[i], shape)
         # normalize to 0 mean, 1 std
-        new_img = (new_img - np.mean(new_img))
-        if np.std(img[i]) > 0.00001:
-            new_img = new_img/np.std(img[i])
+        if normalize:
+            new_img = (new_img - np.mean(new_img))
+            if np.std(img[i]) > 0.00001:
+                new_img = new_img/np.std(img[i])
         # else:
         #     continue
         res.append(new_img)

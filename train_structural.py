@@ -97,7 +97,7 @@ def run(optimizer_type, img_type, lr = 0.005):
 
 def test(model_filename, img_type, dir_name):
     model = torch.load(os.path.join(dir_name, model_filename))
-    base_dirs = ['Peking_1', 'Peking_2', 'Peking_3', 'OHSU', 'WashU', 'KKI', 'NeuroIMAGE', 'Pittsburgh']
+    base_dirs = ['KKI', 'NeuroIMAGE', 'OHSU', 'Peking_1', 'Peking_2', 'Peking_3', 'Pittsburgh','WashU']
     model.eval()
     total_attempts = 0
     total_correct = 0

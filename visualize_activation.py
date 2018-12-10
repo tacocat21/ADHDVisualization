@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 import torch
 from torch.autograd import Variable
-
+from torch.nn import ReLU
 import ipdb
 import dataset
 import util
@@ -82,42 +82,124 @@ class GradCam():
         # Get convolution outputs
         target = conv_output.data.cpu().numpy()[0]
         # Get weights from gradients
-        weights = np.mean(guided_gradients, axis=(2, 3))  # Take averages for each gradient
         # Create empty numpy array for cam
         cam = np.ones(target.shape[1:], dtype=np.float32)
         # Multiply each weight with its conv output and then, sum
-        # for i, w in enumerate(weights):
-        #     cam += w * target[i, :, :]
-        for channel in range(weights.shape[0]):
-            for depth_idx in range(weights.shape[1]):
-                cam[depth_idx] += weights[channel][depth_idx] * target[channel][depth_idx]
+        weights = np.mean(guided_gradients, axis=(1, 2, 3))  # Take averages for each gradient
+        for i, w in enumerate(weights):
+            cam += w * target[i, :, :]
+
+        # weights = np.mean(guided_gradients, axis=(2, 3))  # Take averages for each gradient
+        # for channel in range(weights.shape[0]):
+        #     for depth_idx in range(weights.shape[1]):
+        #         cam[depth_idx] += weights[channel][depth_idx] * target[channel][depth_idx]
+
         # cam = cv2.resize(cam, (224, 224))
         cam = np.maximum(cam, 0) # RELU
         cam = (cam - np.min(cam)) / (np.max(cam) - np.min(cam))  # Normalize between 0-1
-        cam = np.uint8(cam * 255)  # Scale between 0-255 to visualize
+        # cam = np.uint8(cam * 255)  # Scale between 0-255 to visualize
         return cam
 
+def guided_grad_cam(grad_cam_mask, guided_backprop_mask):
+    """
+        Guided grad cam is just pointwise multiplication of cam mask and
+        guided backprop mask
+    Args:
+        grad_cam_mask (np_arr): Class activation map mask
+        guided_backprop_mask (np_arr):Guided backprop mask
+    """
+    cam_gb = np.multiply(grad_cam_mask, guided_backprop_mask)
+    return cam_gb
+
+class GuidedBackprop():
+    """
+       Produces gradients generated with guided back propagation from the given image
+    """
+    def __init__(self, model):
+        self.model = model
+        self.gradients = None
+        # Put model in evaluation mode
+        self.model.eval()
+        self.update_relus()
+        self.hook_layers()
+
+    def hook_layers(self):
+        def hook_function(module, grad_in, grad_out):
+            self.gradients = grad_in[0]
+
+        # Register hook to the first layer
+        first_layer = list(self.model._modules.items())[0][1]
+        first_layer.register_backward_hook(hook_function)
+
+    def update_relus(self):
+        """
+            Updates relu activation functions so that it only returns positive gradients
+        """
+        def relu_hook_function(module, grad_in, grad_out):
+            """
+            If there is a negative gradient, changes it to zero
+            """
+            if isinstance(module, ReLU):
+                return (torch.clamp(grad_in[0], min=0.0),)
+        # Loop through layers, hook up ReLUs with relu_hook_function
+        for pos, module in self.model._modules.items():
+            if isinstance(module, ReLU):
+                module.register_backward_hook(relu_hook_function)
+
+    def generate_gradients(self, input_image, target_class):
+        # Forward pass
+        model_output = self.model(input_image)
+        # Zero gradients
+        self.model.zero_grad()
+        # Target for backprop
+        one_hot_output = torch.cuda.FloatTensor(1, model_output.size()[-1]).zero_()
+        one_hot_output[0][target_class] = 1
+        # Backward pass
+        model_output.backward(gradient=one_hot_output)
+        # Convert Pytorch variable to numpy array
+        # [0] to get rid of the first channel (1,3,224,224)
+        gradients_as_arr = self.gradients.data.cpu().numpy()[0][0]
+        return gradients_as_arr
+
+def reshape_3d_size(img, final_size):
+    img = util.resize_3d_img(img, (final_size[1], final_size[2]), normalize=False)
+    idx = np.linspace(0, img.shape[0]-2, final_size[0])
+    idx = idx.astype(int)
+    return img[idx]
 
 if __name__ == '__main__':
     # Get params
     target_example = 2  # Snake
     # (original_image, prep_img, target_class, file_name_to_export, pretrained_model) =\
     #     get_example_params(target_example)
-    model = util.load_model('model/ImgType.STRUCTURAL_T1/adam/0.0001/29.ckpt')
+    model = util.load_model('model/ImgType.STRUCTURAL_T1/adam/0.0001/5.ckpt')
     # Grad cam
-    grad_cam = GradCam(model, target_layer='conv2')
-    d = dataset.ImageDataset('Peking_1', util.ImgType.STRUCTURAL_FILTER)
-    original_image, label, _ = d[10]
+    grad_cam = GradCam(model, target_layer='conv1')
+    d = dataset.ImageDataset('WashU', util.ImgType.STRUCTURAL_FILTER)
+    original_image, label, _ = d[15]
+    print("label: {}".format(label))
     img = torch.Tensor(original_image).float()
     img = img.view(1, 1, img.shape[0], img.shape[1], img.shape[2]).cuda()
     prep_img = Variable(img, requires_grad=True)
     # Generate cam mask
     cam = grad_cam.generate_cam(prep_img, label)
-    gradient = grad_cam.extractor.gradients.data.cpu().numpy()[0]
-    # Save mask
-    # save_class_activation_images(original_image, cam, file_name_to_export)
-    display = display_img.Display(gradient)
-    display.multi_slice_viewer()
-    display_brain = display_img.Display(original_image)
+    guided_backprop = GuidedBackprop(model)
+    guided_grads = guided_backprop.generate_gradients(prep_img, label)
+    guided_grads = reshape_3d_size(guided_grads, cam.shape)
+    reshaped_image = reshape_3d_size(original_image, cam.shape)
+    cam_x_original_image = np.multiply(cam, reshaped_image)
+    guided_gc = guided_grad_cam(cam, guided_grads)
+    display_list = [cam]
+    # display_list = [cam, original_image, cam_x_original_image, guided_gc, original_image, guided_grads]
+    for d in display_list:
+        display = display_img.Display(d)
+        display.multi_slice_viewer()
+    # display = display_img.Display(cam)
+    # display.multi_slice_viewer()
+    # display = display_img.Display(guided_gc)
+    # display.multi_slice_viewer()
+    # display_brain = display_img.Display(original_image)
+    # display_brain.multi_slice_viewer()
+    # display_brain = display_img.Display(guided_grads)
     # display_brain.multi_slice_viewer()
     print('Grad cam completed')
