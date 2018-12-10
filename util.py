@@ -1,3 +1,4 @@
+import pickle
 import os
 import nibabel as nib
 import numpy as np
@@ -6,11 +7,11 @@ import scipy.misc
 import ipdb
 import glob
 
-IMG_LENGTH = 32
+IMG_LENGTH = 187
 BATCH_SIZE = 25
 DATA_DIR = 'data/images'
 NYU_DIR_NAME = 'NYU/'
-MODEL_IMG_INPUT_SIZE=(233, 189)
+MODEL_IMG_INPUT_SIZE=(169, 195)
 
 
 def mkdir(dir):
@@ -39,8 +40,8 @@ def resize_3d_img(img, shape):
         new_img = (new_img - np.mean(new_img))
         if np.std(img[i]) > 0.00001:
             new_img = new_img/np.std(img[i])
-        else:
-            continue
+        # else:
+        #     continue
         res.append(new_img)
     return np.asarray(res)
 
@@ -52,7 +53,7 @@ def format_subject_id_name(subject_id):
         subject_id = '0' * (7 - len(subject_id)) + subject_id
     return subject_id
 
-def get_img_name(subject_id, img_type, dir_name):
+def get_img_name_list(subject_id, img_type, dir_name):
     img_name = None
     if img_type == ImgType.STRUCTURAL_T1:
         img_name = STRUCTURAL_T1_FILE_FORMAT.format(subject=subject_id, session_id='*')
@@ -68,10 +69,10 @@ def get_img_name(subject_id, img_type, dir_name):
         img_name = FUNCTIONAL_BANDPASS_FILE_FORMAT.format(subject=subject_id, session_id='*')
     path = os.path.join(dir_name, img_name)
     try:
-        return glob.glob(path)[0]
+        return glob.glob(path)
     except IndexError:
         print("Error obtaining in {}".format(path))
-        return ''
+        return []
 
 
 class ImgType(Enum):
@@ -90,3 +91,8 @@ STRUCTURAL_TRANSFORM_FILE_FORMAT = '{subject}_session_{session_id}_template.nii.
 FUNCTIONAL_BLURRED_FILE_FORMAT = 'snwmrda{subject}_session_{session_id}_rest_{rest_id}.nii.gz'
 FUNCTIONAL_BANDPASS_FILE_FORMAT = 'sfnwmrda{subject}_session_{session_id}_rest_{rest_id}.nii.gz'
 # https://github.com/tkipf/pygcn for ReHO data processing
+
+def save_data(d, filename):
+    with open(filename, 'wb') as fp:
+        pickle.dump(obj=d, file=fp)
+

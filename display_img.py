@@ -15,7 +15,7 @@ def remove_keymap_conflicts(new_keys_set):
                 keys.remove(key)
 
 class Display:
-    def __init__(self, input_val):
+    def __init__(self, input_val, mask=None):
         # input_val can be filename or image
         if type(input_val) is str:
             self.filename = input_val
@@ -27,6 +27,8 @@ class Display:
         self.num_dim = len(self.img.shape)
         self.img_idx = 0
         print(self.img.shape)
+        self.mask = mask
+        self.alpha = 0.6
 
     def multi_slice_viewer(self):
         remove_keymap_conflicts({'j', 'k', 'h', 'l'})
@@ -38,6 +40,8 @@ class Display:
         ax.volume = volume
         ax.index = 0
         ax.imshow(volume[ax.index])
+        # if self.mask is not None:
+        #     ax.imshow(self.mask[ax.index], alpha=0.5, cmap='jet')
         fig.canvas.mpl_connect('key_press_event', self.process_key)
         plt.show()
 
@@ -58,13 +62,23 @@ class Display:
     def previous_slice(self, ax):
         volume = ax.volume
         ax.index = (ax.index - 1) % volume.shape[0]  # wrap around using %
-        ax.images[0].set_array(volume[ax.index])
+        if self.mask is not None:
+            ax.images[0].set_array(volume[ax.index] *(1.0 - self.alpha) + self.alpha * 255 *self.mask[ax.index])
+        else:
+            ax.images[0].set_array(volume[ax.index])
         print('new ax.index {}'.format(ax.index))
 
     def next_slice(self, ax):
         volume = ax.volume
         ax.index = (ax.index + 1) % volume.shape[0]
-        ax.images[0].set_array(volume[ax.index])
+        # ax.images[0].set_array(volume[ax.index])
+        if self.mask is not None:
+            print('using mask')
+            ax.images[0].set_array(volume[ax.index] *(1.0 - self.alpha) + self.alpha * 255 *self.mask[ax.index])
+        else:
+            ax.images[0].set_array(volume[ax.index])
+
+        print('new ax.index {}'.format(ax.index))
 
     def previous_volume(self, ax):
         if self.num_dim <= 3:
@@ -72,6 +86,8 @@ class Display:
         self.img_idx = (self.img_idx + 1) % self.img.shape[0]
         ax.volume = self.img[self.img_idx]
         ax.images[0].set_array(self.img[self.img_idx][ax.index])
+        print('new img_index {}'.format(self.img_idx))
+
 
     def next_volume(self, ax):
         if self.num_dim <= 3:
@@ -79,6 +95,7 @@ class Display:
         self.img_idx = (self.img_idx - 1) % self.img.shape[0]
         ax.volume = self.img[self.img_idx]
         ax.images[0].set_array(self.img[self.img_idx][ax.index])
+        print('new img_index {}'.format(self.img_idx))
 
 
 

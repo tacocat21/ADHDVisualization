@@ -25,13 +25,14 @@ class ImageDataset(torch.utils.data.Dataset):
         info = self.phenotype_info.iloc[idx]
         subject_id = util.format_subject_id_name(info[0])
         dir_name = os.path.join(self.base_dir, str(subject_id))
-        img_name = util.get_img_name(subject_id=subject_id, img_type=self.img_type, dir_name=dir_name)
+        img_name = util.get_img_name_list(subject_id=subject_id, img_type=self.img_type, dir_name=dir_name)
         # path = os.path.join(dir_name, img_name)
-        path = img_name
-        if path == '':
+        if len(img_name) == 0:
             return np.zeros((util.IMG_LENGTH, *util.MODEL_IMG_INPUT_SIZE)), 1, 1
+        path = img_name[0]
         try:
             img = util.open_nii_img(path)
+            # print(img.shape)
         except:
             print('Error idx: {} path: {}'.format(idx, path))
             return np.zeros((util.IMG_LENGTH, *util.MODEL_IMG_INPUT_SIZE)), 1, 1
@@ -45,8 +46,9 @@ class ImageDataset(torch.utils.data.Dataset):
                 img = torch.stack(res, axis=0)
         elif len(img.shape) == 4:
             raise NotImplementedError("Need to imploment 4d access")
-        idx = random.randint(0, len(img)-util.IMG_LENGTH-1)
-        return img[idx:idx+util.IMG_LENGTH], int(info['DX']), 0
+        # idx = random.randint(0, len(img)-util.IMG_LENGTH-1)
+        # return img[idx:idx+util.IMG_LENGTH], int(info['DX']), 0
+        return img[3:util.IMG_LENGTH], int(info['DX']), 0
 
     def __len__(self):
         return len(self.phenotype_info)
