@@ -2,6 +2,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import util
+import numpy as np
 import ipdb
 # code from https://www.datacamp.com/community/tutorials/matplotlib-3d-volumetric-data
 # used to display structural images
@@ -100,12 +101,31 @@ class Display:
         print('new img_index {}'.format(self.img_idx))
 
 
+def save_3d_image_display(img, filename):
+    w = 15
+    h = 15
+    fig = plt.figure(figsize=(10, 10))
+    columns = 9
+    rows = 10
+    for i in range(1, columns * rows + 1):
+        if i == img.shape[0]:
+            break
+        _img = img[i-1]
+        fig.add_subplot(rows, columns, i)
+        im = plt.imshow(_img)
+        im.axes.get_xaxis().set_visible(False)
+        im.axes.get_yaxis().set_visible(False)
+    plt.savefig(filename)
 
 if __name__ == '__main__':
-    d = Display('./sfnwmrda0010100_session_1_rest_1.nii.gz')
+    # d = Display('./sfnwmrda0010100_session_1_rest_1.nii.gz')
     # d = Display('./snwmrda0010001_session_1_rest_2.nii.gz')
     # d = Display('./wssd0010001_session_1_anat.nii.gz')
     # img = util.open_nii_img('./wssd0010001_session_1_anat.nii.gz')
     # multi_slice_viewer(img)
     # plt.show()
-    d.multi_slice_viewer()
+    # d.multi_slice_viewer()
+
+    cam = np.load('cam.npy')
+    print(cam.shape)
+    save_3d_image_display(cam, 'cam.png')
