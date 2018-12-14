@@ -11,6 +11,7 @@ import torch
 IMG_LENGTH = 187
 BATCH_SIZE = 12
 DATA_DIR = 'data/images'
+TEST_DATA_DIR = 'data/test_images'
 NYU_DIR_NAME = 'NYU/'
 MODEL_IMG_INPUT_SIZE=(169, 195)
 # 'model/ImgType.STRUCTURAL_FILTER/adam/0.0001/29.ckpt'

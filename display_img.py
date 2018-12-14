@@ -1,3 +1,4 @@
+from matplotlib.colors import LinearSegmentedColormap
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -101,20 +102,46 @@ class Display:
         print('new img_index {}'.format(self.img_idx))
 
 
-def save_3d_image_display(img, filename):
+def save_3d_image_display(img, title, filename):
     w = 15
     h = 15
     fig = plt.figure(figsize=(10, 10))
     columns = 9
     rows = 10
+    plt.title(title)
+    plt.axis('off')
+    cdict3 = {'red': ((0.0, 0.0, 0.0),
+                      (0.25, 0.0, 0.0),
+                      (0.5, 0.8, 1.0),
+                      (0.75, 1.0, 1.0),
+                      (1.0, 0.4, 1.0)),
+
+              'green': ((0.0, 0.0, 0.0),
+                      (0.25, 0.0, 0.0),
+                      (0.5, 0.8, 1.0),
+                      (0.75, 1.0, 1.0),
+                      (1.0, 0.4, 1.0)),
+              'blue': ((0.0, 0.0, 0.0),
+                      (0.25, 0.0, 0.0),
+                      (0.5, 0.8, 1.0),
+                      (0.75, 1.0, 1.0),
+                      (1.0, 0.4, 1.0))
+              }
+    # blue_red1 = LinearSegmentedColormap('BlueRed1', cdict3)
+    cmap = plt.get_cmap('viridis')
     for i in range(1, columns * rows + 1):
         if i == img.shape[0]:
             break
         _img = img[i-1]
         fig.add_subplot(rows, columns, i)
-        im = plt.imshow(_img)
+        im = plt.imshow(_img, cmap=cmap)
         im.axes.get_xaxis().set_visible(False)
         im.axes.get_yaxis().set_visible(False)
+        # fig.colorbar(im, extend='both', spacing='uniform',
+        #          shrink=0.9)
+    # cb_ax = fig.add_axes([0.83, 0.1, 0.02, 0.8])
+    # cbar = fig.colorbar(im, shrink=0.9, cax=cb_ax)
+    plt.tight_layout()
     plt.savefig(filename)
 
 if __name__ == '__main__':

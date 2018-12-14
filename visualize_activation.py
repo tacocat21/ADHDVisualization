@@ -3,6 +3,7 @@ Created on Thu Oct 26 11:06:51 2017
 
 @author: Utku Ozbulak - github.com/utkuozbulak
 """
+import os
 import cv2
 import numpy as np
 import torch
@@ -84,21 +85,21 @@ class GradCam():
         # Get weights from gradients
         # Create empty numpy array for cam
         cam = np.ones(target.shape[1:], dtype=np.float32)
-        # Multiply each weight with its conv output and then, sum
+        negative_cam = np.ones(target.shape[1:], dtype=np.float32)
         weights = np.mean(guided_gradients, axis=(1, 2, 3))  # Take averages for each gradient
+        # Multiply each weight with its conv output and then, sum
         for i, w in enumerate(weights):
             cam += w * target[i, :, :]
-
-        # weights = np.mean(guided_gradients, axis=(2, 3))  # Take averages for each gradient
-        # for channel in range(weights.shape[0]):
-        #     for depth_idx in range(weights.shape[1]):
-        #         cam[depth_idx] += weights[channel][depth_idx] * target[channel][depth_idx]
+            negative_cam -= w * target[i, :, :]
 
         # cam = cv2.resize(cam, (224, 224))
         cam = np.maximum(cam, 0) # RELU
         cam = (cam - np.min(cam)) / (np.max(cam) - np.min(cam))  # Normalize between 0-1
-        # cam = np.uint8(cam * 255)  # Scale between 0-255 to visualize
-        return cam
+
+        negative_cam = np.maximum(cam, 0) # RELU
+        negative_cam = (negative_cam - np.min(negative_cam)) / (np.max(negative_cam) - np.min(negative_cam))  # Normalize between 0-1
+        beta = 1000
+        return beta*cam, beta*negative_cam
 
 def guided_grad_cam(grad_cam_mask, guided_backprop_mask):
     """
@@ -126,9 +127,9 @@ class GuidedBackprop():
     def hook_layers(self):
         def hook_function(module, grad_in, grad_out):
             self.gradients = grad_in[0]
-
         # Register hook to the first layer
-        first_layer = list(self.model._modules.items())[0][1]
+        first_layer = list(self.model._modules.items())[1][1][0]
+        print(first_layer)
         first_layer.register_backward_hook(hook_function)
 
     def update_relus(self):
@@ -167,39 +168,80 @@ def reshape_3d_size(img, final_size):
     idx = idx.astype(int)
     return img[idx]
 
-if __name__ == '__main__':
-    # Get params
-    target_example = 2  # Snake
-    # (original_image, prep_img, target_class, file_name_to_export, pretrained_model) =\
-    #     get_example_params(target_example)
-    model = util.load_model('model/ImgType.STRUCTURAL_T1/adam/0.0001/5.ckpt')
+def upsize_3d_img(img, final_size):
+    # resize x, y
+    resize_x_y = []
+    for i in range(img.shape[0]):
+        resize_x_y.append(cv2.resize(img[i], (final_size[1], final_size[2])).transpose())
+    resize_x_y = np.asarray(resize_x_y)
+    ipdb.set_trace()
+    resize_x_y = resize_x_y.transpose(1, 0, 2)
+
+    final = []
+    for i in range(resize_x_y.shape[0]):
+        final.append(cv2.resize(resize_x_y[i], (final_size[0], final_size[2])).transpose())
+    final = np.asarray(final)
+    final = final.transpose(1, 0, 2)
+
+    return final
+
+def create_images(model, model_name, dataset_name='Peking_1', img_idx=2, target_layer='conv1', image_dir = 'images/'):
     # Grad cam
-    grad_cam = GradCam(model, target_layer='conv1')
-    d = dataset.ImageDataset('WashU', util.ImgType.STRUCTURAL_FILTER)
-    original_image, label, _ = d[15]
+    grad_cam = GradCam(model, target_layer=target_layer)
+    d = dataset.ImageDataset(dataset_name, util.ImgType.STRUCTURAL_FILTER)
+    original_image, label, _ = d[img_idx]
     print("label: {}".format(label))
     img = torch.Tensor(original_image).float()
     img = img.view(1, 1, img.shape[0], img.shape[1], img.shape[2]).cuda()
     prep_img = Variable(img, requires_grad=True)
     # Generate cam mask
-    cam = grad_cam.generate_cam(prep_img, label)
+    cam, negative_cam = grad_cam.generate_cam(prep_img, label)
     guided_backprop = GuidedBackprop(model)
     guided_grads = guided_backprop.generate_gradients(prep_img, label)
-    guided_grads = reshape_3d_size(guided_grads, cam.shape)
-    reshaped_image = reshape_3d_size(original_image, cam.shape)
-    cam_x_original_image = np.multiply(cam, reshaped_image)
-    guided_gc = guided_grad_cam(cam, guided_grads)
-    display_list = [cam]
-    # display_list = [cam, original_image, cam_x_original_image, guided_gc, original_image, guided_grads]
+    # cam = upsize_3d_img(cam, guided_grads.shape)
+    guided_grads_small = reshape_3d_size(guided_grads, cam.shape)
+    original_image_small = reshape_3d_size(original_image, cam.shape)
+    # reshaped_image = reshape_3d_size(original_image, cam.shape)
+    # cam_x_original_image = np.multiply(cam, reshaped_image)
+    guided_gc = guided_grad_cam(cam, guided_grads_small)
+    layer_name_dict = target_layer[-1]
+    display_list = []
+    label_name = ['Normal patient', 'Patient with ADHD-Combined', 'Patient with ADHD-hyperactive/Impulsive', 'Patient with ADHD-Inattentive']
+    # negative_cam, cam, guided_gc, original_image, original_image, guided_grads
+    display_list.append({'img': negative_cam, 'title': 'Negative Grad-CAM for Epoch {}. {}'.format(model_name, label_name[int(label)]), 'filename': 'negative_cam.png'})
+    display_list.append({'img': cam, 'title': 'Grad-CAM for Epoch {} Convolution layer {} {}'.format(model_name, target_layer[-1], label_name[int(label)]), 'filename': 'cam.png'})
+    display_list.append({'img': original_image, 'title': 'Original Structural MRI Scan.\nLabel: {}'.format(label_name[int(label)]), 'filename': 'original_image.png'})
+    display_list.append({'img': guided_gc, 'title': 'Guided Grad-CAM for Epoch {} Conv layer {} {}'.format(model_name, target_layer[-1], label_name[int(label)]), 'filename': 'guided_gc.png'})
+    display_list.append({'img': guided_grads, 'title': 'Guided Backpropagation for Epoch {} {}'.format(model_name, label_name[int(label)]), 'filename': 'guided_backprop.png'})
+
+    util.mkdir(image_dir)
     for d in display_list:
-        display = display_img.Display(d)
-        display.multi_slice_viewer()
-    # display = display_img.Display(cam)
-    # display.multi_slice_viewer()
-    # display = display_img.Display(guided_gc)
-    # display.multi_slice_viewer()
-    # display_brain = display_img.Display(original_image)
-    # display_brain.multi_slice_viewer()
-    # display_brain = display_img.Display(guided_grads)
-    # display_brain.multi_slice_viewer()
-    print('Grad cam completed')
+        display_img.save_3d_image_display(d['img'], d['title'], os.path.join(image_dir, d['filename']))
+
+
+if __name__ == '__main__':
+    # model = torch.load('model/ImgType.STRUCTURAL_T1/adam/0.0001/25.ckpt')
+    # model = torch.load('model_large/ImgType.STRUCTURAL_T1/adam/0.0001/149.ckpt')
+    # dir_name = 'model_large/ImgType.STRUCTURAL_T1/adam/0.001/'
+    # models = [19, 25, 29, 75, 100, 125, 149]
+    # for m in models:
+    #     model = torch.load(dir_name + '{}.ckpt'.format(m))
+    #     # model = util.load_model(dir_name + '{}.ckpt'.format(m))
+    #     create_images(model, target_layer='conv1', model_name=str(m), image_dir='images/large/0.001/conv1/{}/'.format(m))
+    #     create_images(model, target_layer='conv2', model_name=str(m), image_dir='images/large/0.001/conv2/{}/'.format(m))
+    #     create_images(model, target_layer='conv4', model_name=str(m), image_dir='images/large/0.001/conv4/{}/'.format(m))
+    #     create_images(model, target_layer='conv8', model_name=str(m), image_dir='images/large/0.001/conv8/{}/'.format(m))
+
+    dir_name = 'model/ImgType.STRUCTURAL_T1/adam/0.0001/'
+    models = [22]
+    for m in models:
+        model = torch.load(dir_name + '{}.ckpt'.format(m))
+        # model = util.load_model(dir_name + '{}.ckpt'.format(m))
+        create_images(model, img_idx=0, target_layer='conv1', model_name=str(m), image_dir='images/small/0.0001/conv1/{}/'.format(m))
+        create_images(model, img_idx=0, target_layer='conv2', model_name=str(m), image_dir='images/small/0.0001/conv2/{}/'.format(m))
+        create_images(model, img_idx=0, target_layer='conv3', model_name=str(m), image_dir='images/small/0.0001/conv3/{}/'.format(m))
+        create_images(model, img_idx=0, target_layer='conv4', model_name=str(m), image_dir='images/small/0.0001/conv4/{}/'.format(m))
+        create_images(model, img_idx=0, target_layer='conv5', model_name=str(m), image_dir='images/small/0.0001/conv5/{}/'.format(m))
+        create_images(model, img_idx=0, target_layer='conv6', model_name=str(m), image_dir='images/small/0.0001/conv6/{}/'.format(m))
+        create_images(model, img_idx=0, target_layer='conv7', model_name=str(m), image_dir='images/small/0.0001/conv7/{}/'.format(m))
+        create_images(model, img_idx=0, target_layer='conv8', model_name=str(m), image_dir='images/small/0.0001/conv8/{}/'.format(m))

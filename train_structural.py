@@ -27,7 +27,7 @@ from multiprocessing import Pool
 IMAGE_SIZE = 224
 NUM_CLASSES = 4
 
-num_of_epochs = 30
+num_of_epochs = 150
 
 
 def run(optimizer_type, img_type, lr = 0.005, large=False):
@@ -98,9 +98,10 @@ def run(optimizer_type, img_type, lr = 0.005, large=False):
                 # if count % 100 == 0:
                 print("Epoch {} iter {}: Training accuracy = {}/{}={} Loss = [{}]".format(epoch, idx, correct, len(label), accuracy, loss.item()))
                 count+= 1
-            base_train_acc = float(num_correct)/num_total * 100.0
-            print("Epoch {} {}: Training accuracy = {}/{}={}".format(epoch, base_dir, num_correct, num_total, base_train_acc))
-            train_acc_dict[base_dir] = base_train_acc
+            if num_total != 0:
+                base_train_acc = float(num_correct)/num_total * 100.0
+                print("Epoch {} {}: Training accuracy = {}/{}={}".format(epoch, base_dir, num_correct, num_total, base_train_acc))
+                train_acc_dict[base_dir] = base_train_acc
 
         torch.save(_model, './{}/{}'.format(save_dir, '{}.ckpt'.format(epoch)))
     train_accu = np.asarray(train_accu)
@@ -108,20 +109,26 @@ def run(optimizer_type, img_type, lr = 0.005, large=False):
     np.save(file=os.path.join(save_dir, 'loss.npy'), arr=train_loss)
     np.save(file=os.path.join(save_dir, 'train_acc.npy'), arr=train_accu)
     print("Ran for {}s".format(time.time()-begin_time))
-    util.save_data(file=os.path.join(save_dir, 'train_dict.pckl'), d=train_acc_dict)
+    util.save_data(filename=os.path.join(save_dir, 'train_dict.pckl'), d=train_acc_dict)
 
 def test(model_filename, img_type, dir_name):
+    print("Testing {}".format(model_filename))
     model = torch.load(os.path.join(dir_name, model_filename))
     base_dirs = ['KKI', 'NeuroIMAGE', 'OHSU', 'Peking_1', 'Peking_2', 'Peking_3', 'Pittsburgh','WashU']
+    # base_dirs = ['Brown', 'KKI', 'NeuroIMAGE', 'OHSU', 'NYU', 'Peking_1', 'Pittsburgh']
     model.eval()
     total_attempts = 0
     total_correct = 0
     res = collections.defaultdict(dict)
     for base_dir in base_dirs:
-        d = dataset.get_data_loader(base_dir, img_type, batch_size=util.BATCH_SIZE)
+        d = dataset.get_data_loader(base_dir, img_type, batch_size=util.BATCH_SIZE, train=False)
         dataset_correct = 0
         dataset_attempt = 0
         for idx, (img, label, err) in enumerate(d):
+            err_exists = sum(err) != 0
+            if err_exists:
+                print("Error in loading {}".format(base_dir))
+                continue
             label = label.cuda()
             img = Variable(img.float()).cuda().contiguous()
             img = img.view(img.shape[0], 1, img.shape[1], img.shape[2], img.shape[3])
@@ -132,13 +139,14 @@ def test(model_filename, img_type, dir_name):
             correct = float(prediction.eq(label.data).sum())
             dataset_attempt += len(label)
             dataset_correct += correct
-        accuracy = (dataset_correct / float(dataset_attempt)) * 100.0
-        res[base_dir]['correct'] = dataset_correct
-        res[base_dir]['attempt'] = dataset_attempt
-        res[base_dir]['accuracy'] = accuracy
-        total_correct += dataset_correct
-        total_attempts += dataset_attempt
-        print('Test Accuracy {}: {}'.format(base_dir, accuracy))
+        if dataset_attempt != 0:
+            accuracy = (dataset_correct / float(dataset_attempt)) * 100.0
+            res[base_dir]['correct'] = dataset_correct
+            res[base_dir]['attempt'] = dataset_attempt
+            res[base_dir]['accuracy'] = accuracy
+            total_correct += dataset_correct
+            total_attempts += dataset_attempt
+            print('Test Accuracy {}: {}/{}={}'.format(base_dir, dataset_correct, dataset_attempt, accuracy))
     res['summary']['correct'] = total_correct
     res['summary']['attempt'] = total_attempts
     res['summary']['accuracy'] = float(total_correct)/total_attempts * 100.0
@@ -152,11 +160,25 @@ if __name__ == '__main__':
     # run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_TRANSFORM)
     # run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_FILTER)
     # run(optimizer_type='adam', img_type=util.ImgType.FUNCTIONAL_GM)
-    lr_list = [0.0001,  0.00005, 0.01, 0.001]
-    for l in lr_list:
-        run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_T1, lr=l, large=True)
-        run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_TRANSFORM, lr=l, large=True)
-        run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_FILTER, lr=l, large=True)
+    # lr_list = [0.0001,  0.00005, 0.01, 0.001]
+    # for l in lr_list:
+    #     run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_T1, lr=l, large=True)
+    #     run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_TRANSFORM, lr=l, large=True)
+    #     run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_FILTER, lr=l, large=True)
+    img_type = util.ImgType.STRUCTURAL_T1
+    lr_list = [0.0001, 0.001, 0.05]
+    for lr in lr_list:
+        dir_name = 'model/ImgType.STRUCTURAL_T1/adam/{}/'.format(lr)
+    # models = [10, 15, 20, 25, 50, 100, 125, 149]
+    # dir_name = 'model/ImgType.STRUCTURAL_T1/adam/0.0001/'
+    # models = [10, 15, 20, 25, 29]
+        models = range(0, 29)
+        for m in models:
+            try:
+                test('{}.ckpt'.format(m), img_type, dir_name)
+            except:
+                print("error in {} {}".format(dir_name, m))
+                continue
         # run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_GM, lr=l)
     # model_ckpt = [15, 20, 25, 30]
     # for c in model_ckpt:
