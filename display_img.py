@@ -6,7 +6,7 @@ import util
 import numpy as np
 import ipdb
 # code from https://www.datacamp.com/community/tutorials/matplotlib-3d-volumetric-data
-# used to display structural images
+# used to display structural images in an interactive method
 
 def remove_keymap_conflicts(new_keys_set):
     for prop in plt.rcParams:
@@ -145,14 +145,6 @@ def save_3d_image_display(img, title, filename):
     plt.savefig(filename)
 
 if __name__ == '__main__':
-    # d = Display('./sfnwmrda0010100_session_1_rest_1.nii.gz')
-    # d = Display('./snwmrda0010001_session_1_rest_2.nii.gz')
-    # d = Display('./wssd0010001_session_1_anat.nii.gz')
-    # img = util.open_nii_img('./wssd0010001_session_1_anat.nii.gz')
-    # multi_slice_viewer(img)
-    # plt.show()
-    # d.multi_slice_viewer()
 
-    cam = np.load('cam.npy')
-    print(cam.shape)
-    save_3d_image_display(cam, 'cam.png')
+    d = Display('./sfnwmrda0010100_session_1_rest_1.nii.gz')
+    d.multi_slice_viewer()

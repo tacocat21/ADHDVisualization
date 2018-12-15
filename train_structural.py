@@ -1,5 +1,7 @@
+"""
+Code used to train and test the models
+"""
 import collections
-import ipdb
 import numpy as np
 import os
 import sys
@@ -19,7 +21,6 @@ import random
 import resnet_3d
 
 import h5py
-# import cv2
 
 from multiprocessing import Pool
 
@@ -31,9 +32,6 @@ num_of_epochs = 150
 
 
 def run(optimizer_type, img_type, lr = 0.005, large=False):
-    # _model = resnet_3d.resnet18(sample_size=IMAGE_SIZE, sample_duration=util.IMG_LENGTH)
-    # _model.fc = torch.nn.Linear(_model.fc.in_features, NUM_CLASSES)
-    # _model = model.StructuralModel3D()
     if large:
         _model = model.StructuralModel3DFullImageLarge()
         _model_dir = 'model_large'
@@ -43,11 +41,9 @@ def run(optimizer_type, img_type, lr = 0.005, large=False):
     _model = _model.cuda()
     if optimizer_type == 'adam':
         optimizer = optim.Adam(_model.parameters(), lr=lr)
-    # ipdb.set_trace()
     save_dir = '{}/{}/{}/{}'.format(_model_dir, str(img_type), optimizer_type, lr)
     util.mkdir(save_dir)
     base_dirs = ['KKI', 'NeuroIMAGE', 'OHSU', 'Peking_1', 'Peking_2', 'Peking_3', 'Pittsburgh','WashU']
-    # base_dirs = ['NYU']
     criterion = nn.CrossEntropyLoss()
     count = 0
     begin_time = time.time()
@@ -115,7 +111,6 @@ def test(model_filename, img_type, dir_name):
     print("Testing {}".format(model_filename))
     model = torch.load(os.path.join(dir_name, model_filename))
     base_dirs = ['KKI', 'NeuroIMAGE', 'OHSU', 'Peking_1', 'Peking_2', 'Peking_3', 'Pittsburgh','WashU']
-    # base_dirs = ['Brown', 'KKI', 'NeuroIMAGE', 'OHSU', 'NYU', 'Peking_1', 'Pittsburgh']
     model.eval()
     total_attempts = 0
     total_correct = 0
@@ -156,22 +151,10 @@ def test(model_filename, img_type, dir_name):
 
 
 if __name__ == '__main__':
-    # run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_T1)
-    # run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_TRANSFORM)
-    # run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_FILTER)
-    # run(optimizer_type='adam', img_type=util.ImgType.FUNCTIONAL_GM)
-    # lr_list = [0.0001,  0.00005, 0.01, 0.001]
-    # for l in lr_list:
-    #     run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_T1, lr=l, large=True)
-    #     run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_TRANSFORM, lr=l, large=True)
-    #     run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_FILTER, lr=l, large=True)
     img_type = util.ImgType.STRUCTURAL_T1
     lr_list = [0.0001, 0.001, 0.05]
     for lr in lr_list:
         dir_name = 'model/ImgType.STRUCTURAL_T1/adam/{}/'.format(lr)
-    # models = [10, 15, 20, 25, 50, 100, 125, 149]
-    # dir_name = 'model/ImgType.STRUCTURAL_T1/adam/0.0001/'
-    # models = [10, 15, 20, 25, 29]
         models = range(0, 29)
         for m in models:
             try:
@@ -179,11 +162,3 @@ if __name__ == '__main__':
             except:
                 print("error in {} {}".format(dir_name, m))
                 continue
-        # run(optimizer_type='adam', img_type=util.ImgType.STRUCTURAL_GM, lr=l)
-    # model_ckpt = [15, 20, 25, 30]
-    # for c in model_ckpt:
-    #     model_name = "{}.ckpt".format(c)
-    #     img_type= util.ImgType.STRUCTURAL_FILTER
-    #     dir_name = 'model/ImgType.STRUCTURAL_FILTER/adam/0.0001/'
-    #     test(model_name, img_type, dir_name)
-    # run_test()

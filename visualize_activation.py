@@ -1,7 +1,6 @@
 """
-Created on Thu Oct 26 11:06:51 2017
-
-@author: Utku Ozbulak - github.com/utkuozbulak
+Different visualization methods
+Modified code from https://github.com/utkuozbulak/pytorch-cnn-visualizations
 """
 import os
 import cv2
@@ -47,9 +46,6 @@ class CamExtractor():
         """
         # Forward pass on the convolutions
         conv_output, x = self.forward_pass_on_convolutions(x)
-        # x = x.view(x.size(0), -1)  # Flatten
-        # Forward pass on the classifier
-        # x = self.model.classifier(x)
         return conv_output, x
 
 
@@ -64,9 +60,9 @@ class GradCam():
         self.extractor = CamExtractor(self.model, target_layer)
 
     def generate_cam(self, input_image, target_class=None):
-        # Full forward pass
-        # conv_output is the output of convolutions at specified layer
-        # model_output is the final output of the model (1, 1000)
+        """
+        Generates the grad-cam image
+        """
         conv_output, model_output = self.extractor.forward_pass(input_image)
         if target_class is None:
             target_class = np.argmax(model_output.data.numpy())
@@ -77,7 +73,6 @@ class GradCam():
         self.model.zero_grad()
         # Backward pass with specified target
         model_output.backward(gradient=one_hot_output, retain_graph=True)
-        # ipdb.set_trace()
         # Get hooked gradients
         guided_gradients = self.extractor.gradients.data.cpu().numpy()[0]
         # Get convolution outputs
@@ -92,7 +87,6 @@ class GradCam():
             cam += w * target[i, :, :]
             negative_cam -= w * target[i, :, :]
 
-        # cam = cv2.resize(cam, (224, 224))
         cam = np.maximum(cam, 0) # RELU
         cam = (cam - np.min(cam)) / (np.max(cam) - np.min(cam))  # Normalize between 0-1
 
@@ -198,13 +192,8 @@ def create_images(model, model_name, dataset_name='Peking_1', img_idx=2, target_
     cam, negative_cam = grad_cam.generate_cam(prep_img, label)
     guided_backprop = GuidedBackprop(model)
     guided_grads = guided_backprop.generate_gradients(prep_img, label)
-    # cam = upsize_3d_img(cam, guided_grads.shape)
     guided_grads_small = reshape_3d_size(guided_grads, cam.shape)
-    original_image_small = reshape_3d_size(original_image, cam.shape)
-    # reshaped_image = reshape_3d_size(original_image, cam.shape)
-    # cam_x_original_image = np.multiply(cam, reshaped_image)
     guided_gc = guided_grad_cam(cam, guided_grads_small)
-    layer_name_dict = target_layer[-1]
     display_list = []
     label_name = ['Normal patient', 'Patient with ADHD-Combined', 'Patient with ADHD-hyperactive/Impulsive', 'Patient with ADHD-Inattentive']
     # negative_cam, cam, guided_gc, original_image, original_image, guided_grads
@@ -220,17 +209,6 @@ def create_images(model, model_name, dataset_name='Peking_1', img_idx=2, target_
 
 
 if __name__ == '__main__':
-    # model = torch.load('model/ImgType.STRUCTURAL_T1/adam/0.0001/25.ckpt')
-    # model = torch.load('model_large/ImgType.STRUCTURAL_T1/adam/0.0001/149.ckpt')
-    # dir_name = 'model_large/ImgType.STRUCTURAL_T1/adam/0.001/'
-    # models = [19, 25, 29, 75, 100, 125, 149]
-    # for m in models:
-    #     model = torch.load(dir_name + '{}.ckpt'.format(m))
-    #     # model = util.load_model(dir_name + '{}.ckpt'.format(m))
-    #     create_images(model, target_layer='conv1', model_name=str(m), image_dir='images/large/0.001/conv1/{}/'.format(m))
-    #     create_images(model, target_layer='conv2', model_name=str(m), image_dir='images/large/0.001/conv2/{}/'.format(m))
-    #     create_images(model, target_layer='conv4', model_name=str(m), image_dir='images/large/0.001/conv4/{}/'.format(m))
-    #     create_images(model, target_layer='conv8', model_name=str(m), image_dir='images/large/0.001/conv8/{}/'.format(m))
 
     dir_name = 'model/ImgType.STRUCTURAL_T1/adam/0.0001/'
     models = [22]
